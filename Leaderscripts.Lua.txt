@@ -1,0 +1,63 @@
+local DataStoreService = game:GetService("DataStoreService")
+local jumpDataStore = DataStoreService:GetDataStore("JumpHeightStore")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Create a RemoteEvent for sending data between server and client
+local SendDataEvent = Instance.new("RemoteEvent")
+SendDataEvent.Name = "SendData"
+SendDataEvent.Parent = ReplicatedStorage
+
+game.Players.PlayerAdded:Connect(function(player)
+	-- Create leaderstats folder
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	-- Create JumpHeight IntValue
+	local jumpValue = Instance.new("IntValue")
+	jumpValue.Name = "JumpHeight"
+	jumpValue.Parent = leaderstats
+
+	-- Load saved jump height
+	local success, savedJumpHeight = pcall(function()
+		return jumpDataStore:GetAsync(player.UserId)
+	end)
+
+	if success and savedJumpHeight then
+		jumpValue.Value = savedJumpHeight -- Set stored jump height
+	else
+		jumpValue.Value = 50 -- Default jump height
+	end
+
+	-- Send the jump height to the client
+	SendDataEvent:FireClient(player, jumpValue.Value)
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local jumpValue = leaderstats:FindFirstChild("JumpHeight")
+		if jumpValue then
+			-- Save the JumpHeight before the player leaves
+			local success, errorMessage = pcall(function()
+				jumpDataStore:SetAsync(player.UserId, jumpValue.Value)
+			end)
+
+			if not success then
+				warn("Failed to save JumpHeight for " .. player.Name .. ": " .. errorMessage)
+			end
+		end
+	end
+end)
+
+-- Update server-side jump height when client sends new value
+SendDataEvent.OnServerEvent:Connect(function(player, newJumpHeight)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local jumpValue = leaderstats:FindFirstChild("JumpHeight")
+		if jumpValue then
+			jumpValue.Value = newJumpHeight -- Update server-side value
+		end
+	end
+end)
+
