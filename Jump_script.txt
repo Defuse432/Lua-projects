@@ -1,32 +1,41 @@
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local gui = script.Parent
-local textBox = script.Parent.TextBox1
-local textLabel = script.Parent.TextBox1.TextLabel
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local SendDataEvent = ReplicatedStorage:WaitForChild("SendData")
+local jumpIncrease = 2 -- How much the jump height increases per jump
+local currentJumpHeight = 50 -- Default jump height
 
-local hasJumped = false
+-- Wait for leaderstats and JumpHeight value
+local leaderstats = player:WaitForChild("leaderstats")
+local jumpValue = leaderstats:WaitForChild("JumpHeight") -- IntValue
 
+-- Set initial jump height
+humanoid.JumpHeight = jumpValue.Value
 
-humanoid.Jumping:Connect(function()
-	
-	if not hasJumped then
-		local randomX = math.random(10,80)/ 100
-		local randomY = math.random(10,80)/ 100
+-- Listen for jump event
+humanoid.StateChanged:Connect(function(_, newState)
+	if newState == Enum.HumanoidStateType.Jumping then
+		currentJumpHeight = humanoid.JumpHeight + jumpIncrease -- Increase height
+		humanoid.JumpHeight = currentJumpHeight -- Apply new height
+		jumpValue.Value = currentJumpHeight -- Update the IntValue
 
-		textBox.Position = UDim2.new(randomX, 0, randomY, 0)
-
-		hasJumped = true
+		-- Send updated JumpHeight to the server
+		SendDataEvent:FireServer(currentJumpHeight)
 	end
-	
-	textBox.Visible = true
-
-	task.wait(1.5)
-
-		textBox.Visible = false
-		hasJumped = false
-	
 end)
+
+-- Receive the initial jump height from the server
+SendDataEvent.OnClientEvent:Connect(function(savedJumpHeight)
+	currentJumpHeight = savedJumpHeight
+	humanoid.JumpHeight = savedJumpHeight
+end)
+
+
+
+
+
+
 
 

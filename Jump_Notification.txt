@@ -1,0 +1,32 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local gui = script.Parent
+local textBox = script.Parent.TextBox1
+local textLabel = script.Parent.TextBox1.TextLabel
+
+
+local hasJumped = false
+
+
+humanoid.Jumping:Connect(function()
+	
+	if not hasJumped then
+		local randomX = math.random(10,80)/ 100
+		local randomY = math.random(10,80)/ 100
+
+		textBox.Position = UDim2.new(randomX, 0, randomY, 0)
+
+		hasJumped = true
+	end
+	
+	textBox.Visible = true
+
+	task.wait(1.5)
+
+		textBox.Visible = false
+		hasJumped = false
+	
+end)
+
+
